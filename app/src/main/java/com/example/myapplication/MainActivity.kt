@@ -8,6 +8,7 @@ import android.text.Spanned
 import android.text.TextWatcher
 import android.util.Half.min
 import android.widget.TextView
+import androidx.core.text.set
 import kotlinx.android.synthetic.main.activity_main.*
 import java.lang.StringBuilder
 import java.lang.ref.WeakReference
@@ -19,8 +20,9 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        textView.addTextChangedListener(PhoneNumberEditor(textView))
+//        textView.addTextChangedListener(PhoneNumberEditor(textView))
         editText.filters += PhoneNumberFormatKeeper
+        editText.addTextChangedListener(PhoneNumberEditor(editText))
         button.setOnClickListener { textView.text = editText.text }
 
     }
@@ -41,6 +43,10 @@ object PhoneNumberFormatKeeper : InputFilter {
 }
 
 class PhoneNumberEditor(view: TextView) : TextWatcher {
+    companion object {
+        private val nonDigits = Regex("\\D")
+    }
+
     private val viewRef = WeakReference(view)
     private var lastResult = ""
 
@@ -51,7 +57,7 @@ class PhoneNumberEditor(view: TextView) : TextWatcher {
 
         check(text.startsWith("(0)")) { "Phone numbers MUST start with (0)! Got [$text]." }
 
-        val digits = text.replaceRange(0..2, "")
+        val digits = text.replaceRange(0..2, "").replace(nonDigits, "")
         val digitCount = digits.length
 
         val resultBuilder = StringBuilder("(0)${digits.subSequence(0, min(3, digitCount))}")
@@ -71,7 +77,7 @@ class PhoneNumberEditor(view: TextView) : TextWatcher {
         }
 
         lastResult = resultBuilder.toString()
-        viewRef.get()!!.text = resultBuilder
+        text.replace(0, text.length, resultBuilder)
     }
 
     override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {
